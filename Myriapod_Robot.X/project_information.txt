@@ -1,12 +1,12 @@
 <Application Description for Project Goes Here>
 
-Project Owner(s):
-Author(s):
+Project Owner(s): Andrew Muzik, Raj Sangha, Onyema Ude, Geoffrey Cheung, Steven Nam D. Le
+Author(s): Steven Nam D. Le
 Hardware Platform:
 Debuggers Used:
 Programmers Used:
-MPLAB Version:
-C Compiler Version:
+MPLAB Version: X
+C Compiler Version: XC-16
 Final Checksum:
 
 FILES INCLUDED IN THE PROJECT TREE:

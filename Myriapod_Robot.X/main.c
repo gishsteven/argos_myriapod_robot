@@ -5,12 +5,6 @@
 /* Device header file */
 #if defined(__XC16__)
     #include <xc.h>
-#elif defined(__C30__)
-    #if defined(__dsPIC33E__)
-    	#include <p33Exxxx.h>
-    #elif defined(__dsPIC33F__)
-    	#include <p33Fxxxx.h>
-    #endif
 #endif
 
 
@@ -30,6 +24,17 @@
 /* Main Program                                                               */
 /******************************************************************************/
 
+// Delay Function
+unsigned int limit1, limit2;
+void delay(limit1, limit2)
+{
+	unsigned int i, j;
+	for (i=0; i<limit1; i++)
+	{
+		for (j=0; j<limit2; j++)
+	}
+}
+
 int16_t main(void)
 {
 
@@ -39,10 +44,13 @@ int16_t main(void)
     /* Initialize IO ports and peripherals */
     InitApp();
 
-    /* TODO <INSERT USER APPLICATION CODE HERE> */
+    /* TODO <INSERT USER APPLICATION CODE HERE> */    
+	while(1) // Allows the servo arm swing left to right and back.
+	{
+		P1DC1 = 120;	//1msec pulse for -90 Degrees
+		delay(10,10); 	//See delay function: Every 10 'j' increments, 'i' increments by 1. (10*10 Cycles)
 
-    while(1)
-    {
-
-    }
+		P1DC1 = 240;	//2msec pulse for 90 Degrees
+		delay(10,10);
+	}
 }
