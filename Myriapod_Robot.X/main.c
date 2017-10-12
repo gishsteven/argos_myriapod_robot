@@ -19,21 +19,24 @@
 /******************************************************************************/
 
 /* i.e. uint16_t <variable_name>; */
+    uint16_t limit1, limit2;
 
 /******************************************************************************/
 /* Main Program                                                               */
 /******************************************************************************/
+    // Delay Function
 
-// Delay Function
-unsigned int limit1, limit2;
-void delay(limit1, limit2)
-{
-	unsigned int i, j;
-	for (i=0; i<limit1; i++)
-	{
-		for (j=0; j<limit2; j++)
-	}
-}
+    void delay(limit1, limit2)
+    {
+        unsigned int i, j;
+        for (i=0; i<limit1; i++)
+        {
+            for (j=0; j<limit2; j++)
+            {
+            }
+        }
+    }
+
 
 int16_t main(void)
 {
