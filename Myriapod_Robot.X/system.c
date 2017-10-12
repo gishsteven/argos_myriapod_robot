@@ -93,8 +93,6 @@ http://microchipdeveloper.com/8bit:intosc*/
 	PTMR = PWM Time Base Register Count Value bits
 	PXTPER = PWM Time Base Period Register*/
     
-    
-
 /* TODO Add clock switching code if appropriate.  An example stub is below.   */
 void ConfigureOscillator(void)
 {
@@ -116,12 +114,12 @@ void ConfigureOscillator(void)
         /* while(OSCCONbits.LOCK != 1); */
 #endif
         
-OSCTUNbits.TUN = 0;
+OSCTUNbits.TUN = 0;     // select FRC = 7.37MHz
 
 CLKDIVbits.DOZE = 1;	// FCY = DOZE/2 = 28.8KHz (DOZE = FOSC/2)
 CLKDIVbits.DOZEN = 1;
 CLKDIVbits.FRCDIV = 6;	//FRCDIVN = FRC/64 = 7.37/64 = 115.15KHz = FOSC
-
+//	CLKDIVbits.FRCDIV = 3;    // FOSC = FRC/8 = 7.37MHz/8 and FP = FOSC/2 = 460KHz*/
 P1TCONbits.PTEN = 0;
 P1TCONbits.PTCKPS = 0; //Prescale is 1:1 so Timer1 clock = 57.6KHz = FP (115.15 /2?)
 P1TCONbits.PTMOD = 0;

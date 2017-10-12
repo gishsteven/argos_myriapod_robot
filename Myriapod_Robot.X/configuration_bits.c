@@ -48,9 +48,9 @@
 			gets power, regardless where they are written in your code. 
 			This is important because sometimes they are needed before your program is executed.*/
 
-#pragma config FCKSM = 3 //1X = Clock switching is disabled, Fail-Safe Clock Monitor is disabled
-#pragma config OSCIOFNC = 0
-#pragma config POSCMD = 3
+#pragma config FCKSM = 3     //1X = Clock switching is disabled, Fail-Safe Clock Monitor is disabled
+#pragma config OSCIOFNC = 0 // OSCO pin is a general purpose I/O pin
+#pragma config POSCMD = 3  // Primary oscillators are disabled
 
 //Configuration Register - FOSCSEL (Frequency of Oscillator Select)
 /*
@@ -68,8 +68,8 @@
 		001 = Internal Fast RC (FRC) oscillator with PLL
 		000 = FRC oscillator*/
 
-#pragma config IESO = 0
-#pragma config FNOSC = 7
+#pragma config IESO = 0     // start with a user-selected oscillator at reset
+#pragma config FNOSC = 7    // select FRC oscillator with postscalar at reset
 
 //Configuration Register - Motor Control PWM FPOR (Pulse Width Module, Power-On Reset Configuration Register)
 /*
@@ -89,7 +89,9 @@
 			(LPRC can be disabled by clearing the SWDTEN bit in the RCON register)
 		https://en.wikipedia.org/wiki/Watchdog_timer*/
 
-#pragma config PWMPIN = 0;
-#pragma config HPOL = 1;
-#pragma config LPOL = 1;
-#pragma config FWDTEN = 0;
+#pragma config PWMPIN = 0
+#pragma config HPOL = 1
+#pragma config LPOL = 1
+#pragma config FWDTEN = 0
+
+#pragma config JTAGEN = 0   //JTAG is disabled
