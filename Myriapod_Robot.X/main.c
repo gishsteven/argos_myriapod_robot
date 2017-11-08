@@ -10,7 +10,6 @@
 
 #include <stdint.h>        /* Includes uint16_t definition                    */
 #include <stdbool.h>       /* Includes true/false definition                  */
-
 #include "system.h"        /* System funct/params, like osc/peripheral config */
 #include "user.h"          /* User funct/params, such as InitApp              */
 
@@ -47,13 +46,22 @@ int16_t main(void)
     /* Initialize IO ports and peripherals */
     InitApp();
 
+    
     /* TODO <INSERT USER APPLICATION CODE HERE> */    
 	while(1) // Allows the servo arm swing left to right and back.
 	{
-		P1DC1 = 120;	//1msec pulse for -90 Degrees
-		delay(10,10); 	//See delay function: Every 10 'j' increments, 'i' increments by 1. (10*10 Cycles)
+                
+		P1DC1 = 67;	// Pulse to 180 degrees
+		delay(100,100); 	//See delay function: Every 10 'j' increments, 'i' increments by 1. (10*10 Cycles)
 
-		P1DC1 = 240;	//2msec pulse for 90 Degrees
-		delay(10,10);
+        P1DC1 = 140; // Pulse for 90 Degrees
+		delay(10,100);
+        
+		P1DC1 = 280; // Pulse for 0 Degrees
+		delay(100,100);
+        
+        P1DC1 = 140; // Pulse for 90 Degrees
+		delay(10,100);
+        
 	}
 }

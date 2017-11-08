@@ -58,7 +58,7 @@
       </runprofile>
     </conf>
     <conf name="XC16_dsPIC33FJ128MC804" type="2">
-      <platformToolSN></platformToolSN>
+      <platformToolSN>:=MPLABComm-USB-Microchip:=&lt;vid>04D8:=&lt;pid>8107:=&lt;rev>0002:=&lt;man>Microchip Technology Incorporated:=&lt;prod>Microstick II SK:=&lt;sn>BUR170320067:=&lt;drv>x:=&lt;xpt>h:=end</platformToolSN>
       <languageToolchainDir>C:\Program Files (x86)\Microchip\xc16\v1.32\bin</languageToolchainDir>
       <mdbdebugger version="1">
         <placeholder1>place holder 1</placeholder1>
