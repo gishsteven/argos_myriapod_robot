@@ -63,10 +63,10 @@ Program Memory  [Origin = 0x200, Length = 0x15600]
 section                    address   length (PC units)   length (bytes) (dec)
 -------                    -------   -----------------   --------------------
 .text                        0x200               0x10a           0x18f  (399)
-.text                        0x30a               0x12e           0x1c5  (453)
-.dinit                       0x438                 0x8             0xc  (12)
+.text                        0x30a               0x142           0x1e3  (483)
+.dinit                       0x44c                 0x8             0xc  (12)
 
-                 Total program memory used (bytes):          0x360  (864) <1%
+                 Total program memory used (bytes):          0x37e  (894) <1%
 
 
 Ivt Memory  [Origin = 0x4, Length = 0xfc]
@@ -140,11 +140,11 @@ External Symbols in Program Memory (by address):
                   0x00030a                  _InitApp
                   0x0003ac                  _delay
                   0x0003d8                  _main
-                  0x0003f4                  _ConfigureOscillator
+                  0x000408                  _ConfigureOscillator
 
 External Symbols in Program Memory (by name):
 
-                  0x0003f4                  _ConfigureOscillator
+                  0x000408                  _ConfigureOscillator
                   0x00030a                  _InitApp
                   0x0002ce                  __AddressError
                   0x0002ec                  __AltAddressError
@@ -320,14 +320,14 @@ __FUID3
  .debug_abbrev    0x000195         0x7d build/XC16_dsPIC33FJ128MC804/production/traps.o
  .debug_abbrev    0x000212         0xb8 build/XC16_dsPIC33FJ128MC804/production/user.o
 
-.debug_line       0x000000        0x33b
+.debug_line       0x000000        0x33f
  *(.debug_line)
  .debug_line      0x000000         0x1a build/XC16_dsPIC33FJ128MC804/production/configuration_bits.o
  .debug_line      0x00001a         0x1a build/XC16_dsPIC33FJ128MC804/production/interrupts.o
- .debug_line      0x000034         0xee build/XC16_dsPIC33FJ128MC804/production/main.o
- .debug_line      0x000122         0xa2 build/XC16_dsPIC33FJ128MC804/production/system.o
- .debug_line      0x0001c4         0xb8 build/XC16_dsPIC33FJ128MC804/production/traps.o
- .debug_line      0x00027c         0xbf build/XC16_dsPIC33FJ128MC804/production/user.o
+ .debug_line      0x000034         0xf2 build/XC16_dsPIC33FJ128MC804/production/main.o
+ .debug_line      0x000126         0xa2 build/XC16_dsPIC33FJ128MC804/production/system.o
+ .debug_line      0x0001c8         0xb8 build/XC16_dsPIC33FJ128MC804/production/traps.o
+ .debug_line      0x000280         0xbf build/XC16_dsPIC33FJ128MC804/production/user.o
 
 .debug_frame      0x000000        0x1f4
  *(.debug_frame)
@@ -1568,14 +1568,14 @@ __c30_signature
  .aivt._AltDMACError
                   0x00010e          0x2 build/XC16_dsPIC33FJ128MC804/production/traps.o
 
-.text             0x00030a        0x12e
+.text             0x00030a        0x142
  .text            0x00030a         0xa2 build/XC16_dsPIC33FJ128MC804/production/user.o
                   0x00030a                  _InitApp
- .text            0x0003ac         0x48 build/XC16_dsPIC33FJ128MC804/production/main.o
+ .text            0x0003ac         0x5c build/XC16_dsPIC33FJ128MC804/production/main.o
                   0x0003ac                  _delay
                   0x0003d8                  _main
- .text            0x0003f4         0x44 build/XC16_dsPIC33FJ128MC804/production/system.o
-                  0x0003f4                  _ConfigureOscillator
+ .text            0x000408         0x44 build/XC16_dsPIC33FJ128MC804/production/system.o
+                  0x000408                  _ConfigureOscillator
 
-.dinit            0x000438          0x8
- .dinit           0x000438          0x8 data_init
+.dinit            0x00044c          0x8
+ .dinit           0x00044c          0x8 data_init
