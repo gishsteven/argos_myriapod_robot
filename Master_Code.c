@@ -19,6 +19,16 @@
 #define PPSUnLock       __builtin_write_OSCCONL(OSCCON & 0xBF)
 #define PPSLock         __builtin_write_OSCCONL(OSCCON | 0x40)
 
+enum ServoAngles {    
+    Counter_Clockwise = 350, 
+    Degree_0   =   280, 
+    Degree_45  =  227,
+    Degree_90  =  175,
+    Degree_135 =  122,
+    Degree_180 =  70,
+    Clockwise  =  50,
+};
+
 void delay(int limit1,int limit2){
         unsigned int i, j;
         for (i=0; i<limit1; i++){
@@ -46,7 +56,6 @@ unsigned char SPI_Transmit2 (unsigned char TxValue){
     LATAbits.LATA1 = 1;        // disable the GPIO SS2
     return SPI2BUF;                   // When full, read the junk data in RX buffer through SPI1BUF
 }
-//Add SPI2STATbits.
 
 void init_SPI() {
 //SPI Setup
@@ -100,6 +109,137 @@ void init_SPI() {
     TRISBbits.TRISB3 = 0;       // PIN 07 (RB3 - OUTPUT for SDO2)   
 }
 
+void init_PWM1(){
+    // PWM1 Timebase control register
+    P1TCONbits.PTEN = 0;                                                        // Do not enable the clock delivery to PWM1 timer yet	
+    P1TCONbits.PTCKPS = 0;                                                      // Prescale is 1:1 so Timer1 clock = 57.6KHz = FP
+    P1TCONbits.PTMOD = 0;                                                       // PWM1 is in free-running mode
+
+    // PWM1 counter and period
+    P1TMRbits.PTMR = 0;                                                         // Initial value in PWM1 counter register
+    P1TPER = 1200;                                                              // PWM1 period register produces 20msec PWM period
+    
+    // PWM1 Control Register 1
+    PWM1CON1bits.PMOD3 = 1;                                                     // PWM I/O Pin =  Independent PWM Output Mode    
+    PWM1CON1bits.PMOD2 = 1;                                                     // PWM I/O Pin =  Independent PWM Output Mode  
+    PWM1CON1bits.PMOD1 = 1;                                                     // PWM I/O Pin =  Independent PWM Output Mode   
+    PWM1CON1bits.PEN1L = 1;                                                     // PIN 26 (PWM1_1)
+    PWM1CON1bits.PEN1H = 1;                                                     // PIN 25 (PWM1_2)
+    PWM1CON1bits.PEN2L = 1;                                                     // PIN 24 (PWM1_3)  
+    PWM1CON1bits.PEN2H = 1;                                                     // PIN 23 (PWM1_4)
+    PWM1CON1bits.PEN3L = 1;                                                     // PIN 22 (PWM1_5)
+    PWM1CON1bits.PEN3H = 1;                                                     // PIN 21 (PWM1_6)
+
+    // PWM1 Control Register 2
+    PWM1CON2bits.IUE = 0;                                                       // Updates are synchronized with timebase
+    PWM1CON2bits.UDIS = 0;                                                      // Updates from period and duty cycle registers are enabled
+
+    // Initialize PWM1 Servo Positions 
+    P1DC1 = Degree_90;
+    PDC1  = Degree_90;
+    P1DC2 = Degree_90; 
+    PDC2  = Degree_90;
+    P1DC3 = Degree_90;
+    P1DC3 = Degree_90;
+}
+
+void init_PWM2(){
+    // PWM2 Timebase control register
+    P2TCONbits.PTEN = 0;                                                        // Do not enable the clock delivery to PWM2 timer yet	
+    P2TCONbits.PTCKPS = 0;                                                      // Prescale is 1:1 so Timer1 clock = 57.6KHz = FP
+    P2TCONbits.PTMOD = 0;                                                       // PWM2 is in free-running mode
+
+    // PWM2 counter and period
+    P2TMRbits.PTMR = 0;                                                         // Initial value in PWM2 counter register
+    P2TPER = 1200;                                                              // PWM1 period register produces 20msec PWM period
+
+    // PWM2 Control Register 1
+    PWM2CON1bits.PMOD1 = 1;                                                     // PWM I/O Pin =  Independent PWM Output Mode 
+    PWM2CON1bits.PEN1H = 1;                                                     // PIN 17 (PWM2_1) PWM Output
+    PWM2CON1bits.PEN1L = 1;                                                     // PIN 18 (PWM2_2) PWM Output  
+    
+    // PWM2 Control Register 2
+    PWM2CON2bits.IUE = 0;                                                       // Updates are synchronized with timebase
+    PWM2CON2bits.UDIS = 0;                                                      // Updates from period and duty cycle registers are enabled
+
+    // Initialize PWM2 Servo Positions
+    P2DC1 = Degree_90;
+}
+
+void init_OC(){
+    //Timer3 Register
+    T3CONbits.TGATE = 0; // Gated (with external clock) timer 3 clock disabled.
+    T3CONbits.TCKPS = 0; // Prescale is 1:1. 57.7KHz = FP
+    T3CONbits.TCS = 0; // Timer3 works with internal clock = 57.6KHz = FP
+
+    //Program Timer 3 time base. 
+    TMR3 = 0; //Initial Value in Timer3 Counter Register.
+    PR3 = 1200; // Timer3 Period Register Produces 20msec PWM Period
+
+    //Output Compare Register
+    OC1CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC1
+    OC2CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC2
+    OC3CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC3
+    OC4CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC4
+    OC1CONbits.OCM = 6;                                                         //OC1 in PWM Mode w/ Fault Pin Disabled
+    OC2CONbits.OCM = 6;                                                         //OC2 in PWM Mode w/ Fault Pin Disabled
+    OC3CONbits.OCM = 6;                                                         //OC3 in PWM Mode w/ Fault Pin Disabled
+    OC4CONbits.OCM = 6;                                                         //OC4 in PWM Mode w/ Fault Pin Disabled
+    
+    //Output Compare 1 Primary and Secondary Initial Duty Cycle
+    OC1R = 60;                                                                   //Initial PWM Duty cycle value to compare against TIMER3
+    //Output Compare 2 Primary and Secondary Initial Duty Cycle
+    OC2R = 120;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+    //Output Compare 3 Primary and Secondary Initial Duty Cycle
+    OC3R = 180;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+    //Output Compare 4 Primary and Secondary Initial Duty Cycle
+    OC4R = 240;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+
+    //Output Compare Pin Assignments
+    TRISBbits.TRISB4 = 0;                                                       //(Pin 11) RP4 is an Output
+    TRISBbits.TRISB5 = 0;                                                       //(Pin 14) RP5 is an Output
+    TRISBbits.TRISB6 = 0;                                                       //(Pin 15) RP6 is an Output
+    TRISBbits.TRISB7 = 0;                                                       //(Pin 16) RP7 is an Output
+    
+    RPOR2bits.RP4R = 18;                                                        //(Pin 11) OC1 to RP4
+    RPOR2bits.RP5R = 19;                                                        //(Pin 14) OC2 to RP5
+    RPOR3bits.RP6R = 20;                                                        //(Pin 15) OC3 to RP6
+    RPOR3bits.RP7R = 21;                                                        //(Pin 16) OC4 to RP7
+    
+    //Initialize OC Servo Positions
+    //TODO: Update to 90 Degrees after testing.
+    OC1RS = OC1R;
+    OC2RS = OC2R;
+    OC3RS = OC3R;
+    OC4RS = OC4R;    
+}
+
+void PWM_Test(){
+
+    P1DC1 = Degree_0;
+    PDC1  = Degree_0;
+    P1DC2 = Degree_0; 
+    PDC2  = Degree_0;
+    P1DC3 = Degree_0;
+    P1DC3 = Degree_0;
+    P2DC1 = Degree_0;
+    
+    OC1RS = Clockwise;
+    OC2RS = Clockwise;
+    OC3RS = Clockwise;
+    OC4RS = Clockwise; 
+    delay(10,10);
+    P1DC1 = Degree_90;
+    PDC1  = Degree_90;
+    P1DC2 = Degree_90; 
+    PDC2  = Degree_90;
+    P1DC3 = Degree_90;
+    P1DC3 = Degree_90;
+    P2DC1 = Degree_90;
+    
+
+}
+
 int main(void) {
    
     // Oscillator value set up
@@ -109,12 +249,20 @@ int main(void) {
     //TODO: Testing PPS unlock at an earlier stage in the code, check if this actually works. 
     PPSUnLock;
     init_SPI();
+    init_PWM1();
+    init_PWM2();
+    init_OC();
     PPSLock;
-    
+
+    P1TCONbits.PTEN = 1; //Enable clock delivery to PWM1 Timer
+    P2TCONbits.PTEN = 1; // Enable the clock delivery to PWM2 timer. 
+    T3CONbits.TON = 1;   // Enable the clock delivery to  OC  timer. 
+   
     while (1) {
         SPI_Transmit1('L');  // Send a data byte          
-        SPI_Transmit2('R');  // Send a data byte           
-        delay(10, 10);
+        SPI_Transmit2('R');  // Send a data byte  
+        PWM_Test();
+        delay(100, 10);
     }  
     return (1);
 }
