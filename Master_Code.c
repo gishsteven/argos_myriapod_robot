@@ -20,7 +20,7 @@
 #define PPSLock         __builtin_write_OSCCONL(OSCCON | 0x40)
 
 enum ServoAngles {    
-    Counter_Clockwise = 350, 
+    Counter_Clockwise = 370, //Note: Servo moving counter-clockwise causes jitter. Might be a hardware issue. 
     Degree_0   =   280, 
     Degree_45  =  227,
     Degree_90  =  175,
@@ -216,27 +216,28 @@ void init_OC(){
 
 void PWM_Test(){
 
-    P1DC1 = Degree_0;
-    PDC1  = Degree_0;
-    P1DC2 = Degree_0; 
-    PDC2  = Degree_0;
-    P1DC3 = Degree_0;
-    P1DC3 = Degree_0;
-    P2DC1 = Degree_0;
+    P1DC1 = Clockwise;
+    PDC1  = Clockwise;
+    P1DC2 = Clockwise; 
+    PDC2  = Clockwise;
+    P1DC3 = Clockwise;
+    P1DC3 = Clockwise;
+    P2DC1 = Clockwise;
     
     OC1RS = Clockwise;
     OC2RS = Clockwise;
     OC3RS = Clockwise;
     OC4RS = Clockwise; 
-    delay(10,10);
-    P1DC1 = Degree_90;
-    PDC1  = Degree_90;
-    P1DC2 = Degree_90; 
-    PDC2  = Degree_90;
-    P1DC3 = Degree_90;
-    P1DC3 = Degree_90;
-    P2DC1 = Degree_90;
+    delay(100,100);
     
+////    P1DC1 = Degree_90;
+////    PDC1  = 70;
+////    P1DC2 = Degree_90; 
+////    PDC2  = Degree_90;
+////    P1DC3 = Degree_90;
+////    P1DC3 = Degree_90;
+////    P2DC1 = Degree_90;
+//    
 
 }
 
@@ -244,7 +245,9 @@ int main(void) {
    
     // Oscillator value set up
     OSCTUNbits.TUN = 0;       // select FRC = 7.37MHz (center frequency)  
-    CLKDIVbits.FRCDIV = 3;    // FOSC = FRC/8 = 7.37MHz/8 and FP = FOSC/2 = 460KHz  
+    CLKDIVbits.FRCDIV = 6;    // FOSC = FRC/8 = 7.37MHz/8 and FP = FOSC/2 = 460KHz  
+    CLKDIVbits.DOZE = 1;      // FCY = DOZE/2 = 28.8KHz (DOZE = FOSC/2)    * DOZE = processor clock reduction bit
+    CLKDIVbits.DOZEN = 1;     // DOZE mode enable bit (field specifies ratio between peripheral clock and cpu clock                                          
 
     //TODO: Testing PPS unlock at an earlier stage in the code, check if this actually works. 
     PPSUnLock;
@@ -262,7 +265,7 @@ int main(void) {
         SPI_Transmit1('L');  // Send a data byte          
         SPI_Transmit2('R');  // Send a data byte  
         PWM_Test();
-        delay(100, 10);
+        delay(100, 100);
     }  
     return (1);
 }
