@@ -10,7 +10,7 @@
 
 #pragma config FCKSM = 3     //1X = Clock switching is disabled, Fail-Safe Clock Monitor is disabled  )
 #pragma config OSCIOFNC = 0 // OSCO pin is a general purpose I/O pin  
-#pragma config POSCMD = 3  // Primary oscillators are disabled  
+#pragma config POSCMD = 3   // Primary oscillators are disabled  
 #pragma config IESO = 0     // start with a user-selected oscillator at reset  
 #pragma config FNOSC = 7    // select FRC oscillator with postscalar at reset  
 #pragma config FWDTEN = 0   // wacthdog timer set by software 
@@ -140,7 +140,7 @@ void init_PWM1(){
     P1DC2 = Degree_90; 
     PDC2  = Degree_90;
     P1DC3 = Degree_90;
-    P1DC3 = Degree_90;
+    PDC3 = Degree_90;
 }
 
 void init_PWM2(){
@@ -221,7 +221,7 @@ void PWM_Test(){
     P1DC2 = Clockwise; 
     PDC2  = Clockwise;
     P1DC3 = Clockwise;
-    P1DC3 = Clockwise;
+    PDC3 = Clockwise;
     P2DC1 = Clockwise;
     
     OC1RS = Clockwise;
@@ -235,7 +235,7 @@ void PWM_Test(){
 ////    P1DC2 = Degree_90; 
 ////    PDC2  = Degree_90;
 ////    P1DC3 = Degree_90;
-////    P1DC3 = Degree_90;
+////    PDC3 = Degree_90;
 ////    P2DC1 = Degree_90;
 //    
 
