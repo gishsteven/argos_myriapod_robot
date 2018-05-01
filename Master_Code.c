@@ -1,12 +1,13 @@
 /*******************************************************************************
  * File:   Myriapod_Master_main.c
- * Author: Authors: Onyema, Muzik, Steven, Geoff, Rajvir
+ * Author: Authors: Onyema, Andrew, Steven, Geoffrey, Rajvir
  * 
  *******************************************************************************
  * Master Main
  ******************************************************************************/
 
-#include <xc.h>   
+#include <xc.h>
+#include <stdio.h>
 
 #pragma config FCKSM = 3     //1X = Clock switching is disabled, Fail-Safe Clock Monitor is disabled  )
 #pragma config OSCIOFNC = 0 // OSCO pin is a general purpose I/O pin  
@@ -16,28 +17,126 @@
 #pragma config FWDTEN = 0   // wacthdog timer set by software 
 #pragma config JTAGEN = 0   //JTAG is disabled  
 
+// Peripheral Pin Select
 #define PPSUnLock       __builtin_write_OSCCONL(OSCCON & 0xBF)
 #define PPSLock         __builtin_write_OSCCONL(OSCCON | 0x40)
 
-enum ServoAngles {    
-    Counter_Clockwise = 370, //Note: Servo moving counter-clockwise causes jitter. Might be a hardware issue. 
-    Degree_0   =   280, 
+void delay(int limit1, int limit2) {
+    unsigned int i, j;
+    for (i = 0; i < limit1; i++) {
+        for (j = 0; j < limit2; j++) {
+        }
+    }
+}
+
+//enum ServoFSR90{      //Calibrations for FSR90 Continuous Servo 
+//    //Clockwise X < 170
+//    //C_Clockwise X > 170
+//    Midpoint   =  170,
+//    R_Slow  =  150,
+//    R_Medium  =  130,
+//    R_Fast =  100,
+//    L_Slow =  190,
+//    L_Medium  =  210,
+//    L_Fast = 240,
+//};
+
+enum ServoTurnigy1370A {    
+    Counter_Clockwise = 355, //Note: Servo moving counter-clockwise causes jitter. Might be a hardware issue. Value 348 is the fastest possible CC movement. 
+    Degree_0   =  280, 
     Degree_45  =  227,
     Degree_90  =  175,
     Degree_135 =  122,
     Degree_180 =  70,
-    Clockwise  =  50,
+    Clockwise  =  1,
+    OC_Counter_Clockwise = 185, 
+    OC_Clockwise = 30
 };
 
-void delay(int limit1,int limit2){
-        unsigned int i, j;
-        for (i=0; i<limit1; i++){
-            for (j=0; j<limit2; j++){
-            }
-        }
+void forwardMovement(){
+    
+        P1DC1 = Counter_Clockwise;      //PWM1_1 & PWM1_2 [LEFT]
+        P1DC2 = Clockwise;              //PWM1_3 & PWM1_4 [RIGHT]
+        P1DC3 = Counter_Clockwise;      //PWM1_5 & PWM1_6 [LEFT]
+        P2DC1 = Clockwise;              //PWM2_1 & PWM2_2 [RIGHT]
+        OC1RS = OC_Counter_Clockwise;   //OC1 [LEFT]
+        OC2RS = OC_Clockwise;           //OC2 [RIGHT]
+        OC3RS = OC_Counter_Clockwise;   //OC3 [LEFT]
+        OC4RS = OC_Clockwise;           //OC4 [RIGHT]
 }
 
-unsigned char SPI_Transmit1 (unsigned char TxValue){
+void stopMovement(){
+       
+        P1DC1 = 0;
+        P1DC2 = 0;
+        P1DC3 = 0;
+        P2DC1 = 0;
+        OC1RS = 0;
+        OC2RS = 0;
+        OC3RS = 0;
+        OC4RS = 0;
+        
+    //TODO: Add code to implement Backwards, Left, annd Right Movement
+}
+
+void backMovement(){
+    
+        P1DC1 = Clockwise;                      //PWM1_1 & PWM1_2 [REVERSE LEFT]
+        P1DC2 = Counter_Clockwise;              //PWM1_3 & PWM1_4 [REVERSE RIGHT]
+        P1DC3 = Clockwise;                      //PWM1_5 & PWM1_6 [REVERSE LEFT]
+        P2DC1 = Counter_Clockwise;              //PWM2_1 & PWM2_2 [REVERSE RIGHT]
+        OC1RS = OC_Clockwise;                   //OC1 [REVERSE LEFT]
+        OC2RS = OC_Counter_Clockwise;           //OC2 [REVERSE RIGHT]
+        OC3RS = OC_Clockwise;                   //OC3 [REVERSE LEFT]
+        OC4RS = OC_Counter_Clockwise;           //OC4 [REVERSE RIGHT]
+}
+
+void leftMovement(){
+        P1DC1 = Clockwise               //Rotate
+        P1DC2 = Clockwise;              //PWM1_3 & PWM1_4 [RIGHT]
+        P1DC3 = Counter_Clockwise;      //PWM1_5 & PWM1_6 [LEFT]
+        P2DC1 = Clockwise;              //PWM2_1 & PWM2_2 [RIGHT]
+        OC1RS = OC_Counter_Clockwise;   //OC1 [LEFT]
+        OC2RS = OC_Clockwise;           //OC2 [RIGHT]
+        OC3RS = OC_Counter_Clockwise;   //OC3 [LEFT]
+        OC4RS = OC_Clockwise;           //OC4 [RIGHT]
+        
+        delay(50,100);
+        P1DC1 = 0;
+}
+
+void rightMovement(){
+        P1DC1 = Counter_Clockwise;      //PWM1_1 & PWM1_2 [LEFT]
+        P1DC2 = Counter_Clockwise;      //Rotate
+        P1DC3 = Counter_Clockwise;      //PWM1_5 & PWM1_6 [LEFT]
+        P2DC1 = Clockwise;              //PWM2_1 & PWM2_2 [RIGHT]
+        OC1RS = OC_Counter_Clockwise;   //OC1 [LEFT]
+        OC2RS = OC_Clockwise;           //OC2 [RIGHT]
+        OC3RS = OC_Counter_Clockwise;   //OC3 [LEFT]
+        OC4RS = OC_Clockwise;           //OC4 [RIGHT]
+        
+        delay(50,100);
+        P1DC2 = 0;
+}
+
+void Gyroscope_Test(){
+    //TODO: If value == misaligned;
+//    if (value == misaligned){
+//        /*Notes: Hardware faults cause the robot to naturally turn left,
+//         *       this function stops two (2) PWM's on the front right to stop,
+//         *       allowing the robot to realign itself. */
+//        P1DC2 = 0;
+//        delay(100,100); //TODO: Re-calibrate this timing often!
+//    }
+    
+    /*
+     * Notes:
+     * A while loop would not work as it will stop the IR_Sensor (we do not have an interrupt!)
+     * IR_Sensor will not work for delay(100,100) because of this function)
+     */
+}
+
+unsigned char SPI_Transmit1 (unsigned char TxValue){ //SLAVE 1 AND SLAVE 2
     LATAbits.LATA0 = 0;                 // enable the GPIO SS1
     while (SPI1STATbits.SPITBF == 1); // Wait until the TX buffer is empty due to a prior process
     SPI1BUF = TxValue;                // When empty, send the byte to the TX buffer             
@@ -47,7 +146,7 @@ unsigned char SPI_Transmit1 (unsigned char TxValue){
     return SPI1BUF;                   // When full, read the junk data in RX buffer through SPI1BUF
 }
 
-unsigned char SPI_Transmit2 (unsigned char TxValue){
+unsigned char SPI_Transmit2 (unsigned char TxValue){ //GYROSCOPE
     LATAbits.LATA1 = 0;        // enable the GPIO SS2
     while (SPI2STATbits.SPITBF == 1); // Wait until the TX buffer is empty due to a prior process
     SPI2BUF = TxValue;                // When empty, send the byte to the TX buffer             
@@ -55,6 +154,14 @@ unsigned char SPI_Transmit2 (unsigned char TxValue){
                                       // Wait until the RX buffer is full of junk data
     LATAbits.LATA1 = 1;        // disable the GPIO SS2
     return SPI2BUF;                   // When full, read the junk data in RX buffer through SPI1BUF
+}
+
+void init_Oscillator(){
+// Oscillator value set up
+    OSCTUNbits.TUN = 0;         // select FRC = 7.37MHz (center frequency)  
+    CLKDIVbits.FRCDIV = 6;      // FOSC = FRC/8 = 7.37MHz/8 and FP = FOSC/2 = 460KHz  
+    CLKDIVbits.DOZE = 1;        // FCY = DOZE/2 = 28.8KHz (DOZE = FOSC/2)    * DOZE = processor clock reduction bit
+    CLKDIVbits.DOZEN = 1;       // DOZE mode enable bit (field specifies ratio between peripheral clock and cpu clock                                          
 }
 
 void init_SPI() {
@@ -84,6 +191,7 @@ void init_SPI() {
     SPI2CON1bits.SPRE = 7;      // Secondary SPI clock pre-scale is 1:1 -> SCK = 460/16=29KHz
     SPI2STATbits.SPIROV = 0;    // Clear initial overflow bit in case an overflow condition in SPI1BUF
     SPI2STATbits.SPIEN = 1;     // Enable the SPI interface
+    
 
 
 //------------------------------------------------------------------------------
@@ -93,7 +201,8 @@ void init_SPI() {
     RPOR0bits.RP1R = 11;        // PIN 05 (RP1 - SCK2)
     RPOR1bits.RP2R = 7;         // PIN 06 (RP2 - SDO1)
     RPOR1bits.RP3R = 10;        // PIN 07 (RP3 - SD02)
-
+    //TODO: ADD MISO FOR SS2
+    //RPINR22bits.SDI2R = 11;     // PIN 11 (RP4 - SDI2)
 //------------------------------------------------------------------------------
 //Pin Input/Output Configuration
 
@@ -106,7 +215,9 @@ void init_SPI() {
     TRISBbits.TRISB0 = 0;       // PIN 04 (RB0 - OUTPUT for SCK1)    
     TRISBbits.TRISB1 = 0;       // PIN 05 (RB1 - OUTPUT for SCK2)
     TRISBbits.TRISB2 = 0;       // PIN 06 (RB2 - OUTPUT for SD01)
-    TRISBbits.TRISB3 = 0;       // PIN 07 (RB3 - OUTPUT for SDO2)   
+    TRISBbits.TRISB3 = 0;       // PIN 07 (RB3 - OUTPUT for SDO2)
+    //TODO: SET PIN AS INPUT
+    //TRISBbits.TRISB4 = 1;       // PIN 11 (RB4 - INPUT  for SDI2)
 }
 
 void init_PWM1(){
@@ -117,7 +228,7 @@ void init_PWM1(){
 
     // PWM1 counter and period
     P1TMRbits.PTMR = 0;                                                         // Initial value in PWM1 counter register
-    P1TPER = 1200;                                                              // PWM1 period register produces 20msec PWM period
+    P1TPER = 1200;                                                              // PWM1 period register produces 20msec PWM period (originally 1200 for 20ms. Changes to 400 to make servos faster.)
     
     // PWM1 Control Register 1
     PWM1CON1bits.PMOD3 = 1;                                                     // PWM I/O Pin =  Independent PWM Output Mode    
@@ -135,12 +246,9 @@ void init_PWM1(){
     PWM1CON2bits.UDIS = 0;                                                      // Updates from period and duty cycle registers are enabled
 
     // Initialize PWM1 Servo Positions 
-    P1DC1 = Degree_90;
-    PDC1  = Degree_90;
-    P1DC2 = Degree_90; 
-    PDC2  = Degree_90;
-    P1DC3 = Degree_90;
-    PDC3 = Degree_90;
+    P1DC1 = 0;
+    P1DC2 = 0;
+    P1DC3 = 0;
 }
 
 void init_PWM2(){
@@ -163,7 +271,7 @@ void init_PWM2(){
     PWM2CON2bits.UDIS = 0;                                                      // Updates from period and duty cycle registers are enabled
 
     // Initialize PWM2 Servo Positions
-    P2DC1 = Degree_90;
+    P2DC1 = 0;
 }
 
 void init_OC(){
@@ -177,23 +285,23 @@ void init_OC(){
     PR3 = 1200; // Timer3 Period Register Produces 20msec PWM Period
 
     //Output Compare Register
-    OC1CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC1
+    OC1CONbits.OCTSEL = 1;  //Replaced by SDI2                                                    //Timer3 Selected for OC1
     OC2CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC2
     OC3CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC3
     OC4CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC4
-    OC1CONbits.OCM = 6;                                                         //OC1 in PWM Mode w/ Fault Pin Disabled
+    OC1CONbits.OCM = 6;     //Replaced by SDI2                                                    //OC1 in PWM Mode w/ Fault Pin Disabled
     OC2CONbits.OCM = 6;                                                         //OC2 in PWM Mode w/ Fault Pin Disabled
     OC3CONbits.OCM = 6;                                                         //OC3 in PWM Mode w/ Fault Pin Disabled
     OC4CONbits.OCM = 6;                                                         //OC4 in PWM Mode w/ Fault Pin Disabled
     
     //Output Compare 1 Primary and Secondary Initial Duty Cycle
-    OC1R = 60;                                                                   //Initial PWM Duty cycle value to compare against TIMER3
+    OC1R = 1200;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
     //Output Compare 2 Primary and Secondary Initial Duty Cycle
-    OC2R = 120;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+    OC2R = 1200;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
     //Output Compare 3 Primary and Secondary Initial Duty Cycle
-    OC3R = 180;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+    OC3R = 1200;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
     //Output Compare 4 Primary and Secondary Initial Duty Cycle
-    OC4R = 240;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
+    OC4R = 1200;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
 
     //Output Compare Pin Assignments
     TRISBbits.TRISB4 = 0;                                                       //(Pin 11) RP4 is an Output
@@ -208,64 +316,87 @@ void init_OC(){
     
     //Initialize OC Servo Positions
     //TODO: Update to 90 Degrees after testing.
-    OC1RS = OC1R;
-    OC2RS = OC2R;
-    OC3RS = OC3R;
-    OC4RS = OC4R;    
+    OC1RS = 0;
+    OC2RS = 0;
+    OC3RS = 0;
+    OC4RS = 0;    
 }
 
-void PWM_Test(){
+void init_IR(){
 
-    P1DC1 = Clockwise;
-    PDC1  = Clockwise;
-    P1DC2 = Clockwise; 
-    PDC2  = Clockwise;
-    P1DC3 = Clockwise;
-    PDC3 = Clockwise;
-    P2DC1 = Clockwise;
+    TRISAbits.TRISA2 = 1;       // PIN 09 (RA2 - INPUT for IR_Sensor)
+    //TRISBbits.TRISB0 = 0; // this can be any gpio (For Testing Purposes)
+    //AD1PCFGL = 1111; //sets Port Configuration Register to digital inputs (For Testing Purposes)
     
-    OC1RS = Clockwise;
-    OC2RS = Clockwise;
-    OC3RS = Clockwise;
-    OC4RS = Clockwise; 
-    delay(100,100);
-    
-////    P1DC1 = Degree_90;
-////    PDC1  = 70;
-////    P1DC2 = Degree_90; 
-////    PDC2  = Degree_90;
-////    P1DC3 = Degree_90;
-////    PDC3 = Degree_90;
-////    P2DC1 = Degree_90;
-//    
-
+    //    #define ir_switch PORTAbits.RA2 // Switch on RA2 - pin 9
+    //    #define led LATAbits.LATA3 // can be any free pin
 }
 
 int main(void) {
    
-    // Oscillator value set up
-    OSCTUNbits.TUN = 0;       // select FRC = 7.37MHz (center frequency)  
-    CLKDIVbits.FRCDIV = 6;    // FOSC = FRC/8 = 7.37MHz/8 and FP = FOSC/2 = 460KHz  
-    CLKDIVbits.DOZE = 1;      // FCY = DOZE/2 = 28.8KHz (DOZE = FOSC/2)    * DOZE = processor clock reduction bit
-    CLKDIVbits.DOZEN = 1;     // DOZE mode enable bit (field specifies ratio between peripheral clock and cpu clock                                          
-
-    //TODO: Testing PPS unlock at an earlier stage in the code, check if this actually works. 
+    init_Oscillator();
+    
     PPSUnLock;
+    //Sets Analog Pins to Digital {Required for SPI}
+    ADPCFGbits.PCFG0 = 1;
+    ADPCFGbits.PCFG1 = 1;
+    ADPCFGbits.PCFG2 = 1;
+    ADPCFGbits.PCFG3 = 1;
+    ADPCFGbits.PCFG4 = 1;
+    ADPCFGbits.PCFG5 = 1;
+    
     init_SPI();
     init_PWM1();
     init_PWM2();
     init_OC();
+    init_IR();
     PPSLock;
 
-    P1TCONbits.PTEN = 1; //Enable clock delivery to PWM1 Timer
+    P1TCONbits.PTEN = 1; //Enable the clock delivery to PWM1 Timer
     P2TCONbits.PTEN = 1; // Enable the clock delivery to PWM2 timer. 
     T3CONbits.TON = 1;   // Enable the clock delivery to  OC  timer. 
-   
+
+    int i = 0;
+    int toggle = 1;
+    delay(200, 100); //Stops the servo from taking off instantly!
+
     while (1) {
-        SPI_Transmit1('L');  // Send a data byte          
-        SPI_Transmit2('R');  // Send a data byte  
-        PWM_Test();
-        delay(100, 100);
-    }  
+
+        if (PORTAbits.RA2) { //PIN 09    
+            //If IR_Sensor is blocked, stop all PWM signals.     
+            stopMovement();
+            for (i = 0; i < 5; i++) {
+                SPI_Transmit1('S');
+            }
+            delay(200, 100);
+
+            backMovement();
+            for (i = 0; i < 5; i++) {
+                SPI_Transmit1('B');
+            }
+            delay(150, 100);
+
+            if (toggle) {
+                leftMovement();
+                for (i = 0; i < 5; i++) {
+                    SPI_Transmit1('F'); //Slaves only move forward.
+                }
+                toggle = 0;
+                delay(200, 100);
+            } else {
+                rightMovement();
+                for (i = 0; i < 5; i++) {
+                    SPI_Transmit1('F'); //Slaves only move forward.
+                }
+                toggle = 1;
+                delay(200, 100);
+            }
+        }
+            
+        else {
+            forwardMovement(); //Default Movement [Forward Movement]
+            SPI_Transmit1('F'); // Send a data byte {Instruction to Continue Moving}
+        }
+    }
     return (1);
 }
