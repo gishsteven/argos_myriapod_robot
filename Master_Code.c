@@ -1,3 +1,6 @@
+
+
+
 /*******************************************************************************
  * File:   Myriapod_Master_main.c
  * Author: Authors: Onyema, Andrew, Steven, Geoffrey, Rajvir
@@ -8,8 +11,10 @@
 
 #include <xc.h>
 #include <stdio.h>
+#include <math.h>
+#include <stdbool.h>
 
-#pragma config FCKSM = 3     //1X = Clock switching is disabled, Fail-Safe Clock Monitor is disabled  )
+#pragma config FCKSM = 3    // Clock switching is disabled, Fail-Safe Clock Monitor is disabled
 #pragma config OSCIOFNC = 0 // OSCO pin is a general purpose I/O pin  
 #pragma config POSCMD = 3   // Primary oscillators are disabled  
 #pragma config IESO = 0     // start with a user-selected oscillator at reset  
@@ -119,7 +124,7 @@ void rightMovement(){
         P1DC2 = 0;
 }
 
-void Gyroscope_Test(){
+bool Gyroscope_Test(){
     //TODO: If value == misaligned;
 //    if (value == misaligned){
 //        /*Notes: Hardware faults cause the robot to naturally turn left,
@@ -128,7 +133,25 @@ void Gyroscope_Test(){
 //        P1DC2 = 0;
 //        delay(100,100); //TODO: Re-calibrate this timing often!
 //    }
+        unsigned int ZH_unsigned, ZL_unsigned, Z_unsigned;
+        signed int Z_signed;
+        double Z, DSP;
     
+        while ((Read_Status_Reg () & 0x04) == 0x00)  // Unless X, Y, Z data are all ready, keep reading the status register
+        Read_Status_Reg ();
+
+        Read_8bit_ZDataH ();
+        Read_8bit_ZDataL ();
+
+        ZH_unsigned = Read_8bit_ZDataH ();
+        ZL_unsigned = Read_8bit_ZDataL ();
+
+        Z_unsigned = (ZH_unsigned << 8) | ZL_unsigned;
+        Z_signed = Z_unsigned;
+        Z = Z_signed;
+        DSP = Z*(250.0/32767.0);
+    
+        return DSP;
     /*
      * Notes:
      * A while loop would not work as it will stop the IR_Sensor (we do not have an interrupt!)
@@ -136,25 +159,112 @@ void Gyroscope_Test(){
      */
 }
 
-unsigned char SPI_Transmit1 (unsigned char TxValue){ //SLAVE 1 AND SLAVE 2
-    LATAbits.LATA0 = 0;                 // enable the GPIO SS1
-    while (SPI1STATbits.SPITBF == 1); // Wait until the TX buffer is empty due to a prior process
-    SPI1BUF = TxValue;                // When empty, send the byte to the TX buffer             
-    while (SPI1STATbits.SPIRBF == 0); // As valid bits shifts out of the SDO port, junk bits are received from the SDI port
-                                      // Wait until the RX buffer is full of junk data
-    LATAbits.LATA0 = 1;         // disable the GPIO SS1
-    return SPI1BUF;                   // When full, read the junk data in RX buffer through SPI1BUF
+unsigned char SPI_Transmit1(unsigned char TxValue) { 
+//SLAVE 1 AND SLAVE 2 SPI (DAISY CHAINED)
+    LATAbits.LATA0 = 0;                     // enable the GPIO SS1
+    while (SPI1STATbits.SPITBF == 1);       // Wait until the TX buffer is empty due to a prior process
+    SPI1BUF = TxValue;                      // When empty, send the byte to the TX buffer             
+    while (SPI1STATbits.SPIRBF == 0);       // As valid bits shifts out of the SDO port, junk bits are received from the SDI port
+    // Wait until the RX buffer is full of junk data
+    LATAbits.LATA0 = 1;                     // disable the GPIO SS1
+    return SPI1BUF;                         // When full, read the junk data in RX buffer through SPI1BUF
 }
 
-unsigned char SPI_Transmit2 (unsigned char TxValue){ //GYROSCOPE
-    LATAbits.LATA1 = 0;        // enable the GPIO SS2
-    while (SPI2STATbits.SPITBF == 1); // Wait until the TX buffer is empty due to a prior process
-    SPI2BUF = TxValue;                // When empty, send the byte to the TX buffer             
-    while (SPI2STATbits.SPIRBF == 0); // As valid bits shifts out of the SDO port, junk bits are received from the SDI port
-                                      // Wait until the RX buffer is full of junk data
-    LATAbits.LATA1 = 1;        // disable the GPIO SS2
-    return SPI2BUF;                   // When full, read the junk data in RX buffer through SPI1BUF
+unsigned char SPI_Transmit2(unsigned char TxValue) { 
+//GYROSCOPE
+    LATAbits.LATA1 = 0;                     // enable the GPIO SS2
+    while (SPI2STATbits.SPITBF == 1);       // Wait until the TX buffer is empty due to a prior process
+    SPI2BUF = TxValue;                      // When empty, send the byte to the TX buffer             
+    while (SPI2STATbits.SPIRBF == 0);       // As valid bits shifts out of the SDO port, junk bits are received from the SDI port
+    // Wait until the RX buffer is full of junk data
+    LATAbits.LATA1 = 1;                     // disable the GPIO SS2
+    return SPI2BUF;                         // When full, read the junk data in RX buffer through SPI1BUF
 }
+
+unsigned char SPI_Receive2() {              
+//GYROSCOPE SPI
+    while (SPI2STATbits.SPITBF == 1);       // Wait until the TX buffer is empty due to a prior process
+    SPI1BUF = 0x00;                         // When empty, send the junk byte (0x00) to the TX buffer             
+    while (SPI2STATbits.SPIRBF == 0);       // As junk bits shifts out of the SDO port, valid bits are received from the SDI port
+    // Wait until the RX buffer is full of valid data
+    return SPI2BUF;                         // When full, read the valid data in RX buffer through SPI1BUF
+}
+
+void Write_Control_Reg1 (unsigned char DataByte) // ODR, BW and X, Y, Z axes enables
+    {    
+    LATBbits.LATB6 = 0;      // Lower SS for instruction delivery
+    SPI_Transmit2 (0x20);     // Send a single write instruction to Control Reg1 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;      // Raise SS for instruction completion
+    }
+
+void Write_Control_Reg2 (unsigned char DataByte) // High pass filter configuration
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit2 (0x21);     // Send a single write instruction to Control Reg2 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    }
+
+void Write_Control_Reg3 (unsigned char DataByte) // Interrupt configuration
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit2 (0x22);     // Send a single write instruction to Control Reg3 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    }
+
+void Write_Control_Reg4 (unsigned char DataByte) // Mode configuration
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit2 (0x23);     // Send a single write instruction to Control Reg4 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    }
+
+void Write_Control_Reg5 (unsigned char DataByte) // Output port configuration
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit2 (0x24);     // Send a single write instruction to Control Reg5 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    }
+
+void Write_FIFO_Control_Reg (unsigned char DataByte) // FIFO control
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit2 (0x2E);     // Send a single write instruction to Control Reg5 address
+    SPI_Transmit2 (DataByte); // Send a data byte
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    }
+
+unsigned char Read_Status_Reg ()
+    {    
+    LATBbits.LATB6 = 0;       // Lower SS for instruction delivery
+    SPI_Transmit (0xA7);      // Send a single read instruction from SR address
+    unsigned char status = SPI_Receive ();  // Read the status register
+    LATBbits.LATB6 = 1;       // Raise SS for instruction completion
+    return status;
+    }
+
+unsigned char Read_8bit_ZDataH ()
+    {    
+    LATBbits.LATB6 = 0;      // Lower SS for instruction delivery
+    SPI_Transmit (0xAD);     // Send a single read instruction from ZDataH address
+    unsigned char ZDataH = SPI_Receive ();  // Read the SPI1BUF register
+    LATBbits.LATB6 = 1;      // Raise SS for instruction completion
+    return ZDataH;
+    }
+
+unsigned char Read_8bit_ZDataL ()
+    {    
+    LATBbits.LATB6 = 0;      // Lower SS for instruction delivery
+    SPI_Transmit (0xAC);     // Send a single read instruction from ZDataL address
+    unsigned char ZDataL = SPI_Receive ();  // Read the SPI1BUF register
+    LATBbits.LATB6 = 1;      // Raise SS for instruction completion
+    return ZDataL;
+    }
+
 
 void init_Oscillator(){
 // Oscillator value set up
@@ -181,7 +291,8 @@ void init_SPI() {
 
     SPI2CON1bits.DISSCK = 0;    // Enable the internal SPI clock
     SPI2CON1bits.DISSDO = 0;    // Enable the SPI data output, SDO
-    SPI2CON1bits.MODE16 = 1;    // Enable the 16-bit data mode
+    //Note: Gyroscope is an 8-bit Register.
+    SPI2CON1bits.MODE16 = 0;    // Enable the 8-bit data mode
     SPI2CON1bits.SSEN = 0;      // This unit is not a slave so Slave Select pin is not used.
     SPI2CON1bits.MSTEN = 1;     // Enable MASTER mode
     SPI2CON1bits.SMP = 0;       // Sample input in the middle of data output period (data is sampled at the pos edge when received at the neg edge of SCK
@@ -192,8 +303,6 @@ void init_SPI() {
     SPI2STATbits.SPIROV = 0;    // Clear initial overflow bit in case an overflow condition in SPI1BUF
     SPI2STATbits.SPIEN = 1;     // Enable the SPI interface
     
-
-
 //------------------------------------------------------------------------------
 //Peripheral Pin Select Configuration
 
@@ -201,8 +310,8 @@ void init_SPI() {
     RPOR0bits.RP1R = 11;        // PIN 05 (RP1 - SCK2)
     RPOR1bits.RP2R = 7;         // PIN 06 (RP2 - SDO1)
     RPOR1bits.RP3R = 10;        // PIN 07 (RP3 - SD02)
-    //TODO: ADD MISO FOR SS2
-    //RPINR22bits.SDI2R = 11;     // PIN 11 (RP4 - SDI2)
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    RPINR22bits.SDI2R = 11;     // PIN 11 (RP4 - SDI2)
 //------------------------------------------------------------------------------
 //Pin Input/Output Configuration
 
@@ -216,8 +325,8 @@ void init_SPI() {
     TRISBbits.TRISB1 = 0;       // PIN 05 (RB1 - OUTPUT for SCK2)
     TRISBbits.TRISB2 = 0;       // PIN 06 (RB2 - OUTPUT for SD01)
     TRISBbits.TRISB3 = 0;       // PIN 07 (RB3 - OUTPUT for SDO2)
-    //TODO: SET PIN AS INPUT
-    //TRISBbits.TRISB4 = 1;       // PIN 11 (RB4 - INPUT  for SDI2)
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    TRISBbits.TRISB4 = 1;       // PIN 11 (RB4 - INPUT  for SDI2)
 }
 
 void init_PWM1(){
@@ -285,11 +394,13 @@ void init_OC(){
     PR3 = 1200; // Timer3 Period Register Produces 20msec PWM Period
 
     //Output Compare Register
-    OC1CONbits.OCTSEL = 1;  //Replaced by SDI2                                                    //Timer3 Selected for OC1
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    //OC1CONbits.OCTSEL = 1;                                                    //Timer3 Selected for OC1
     OC2CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC2
     OC3CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC3
     OC4CONbits.OCTSEL = 1;                                                      //Timer3 Selected for OC4
-    OC1CONbits.OCM = 6;     //Replaced by SDI2                                                    //OC1 in PWM Mode w/ Fault Pin Disabled
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    //OC1CONbits.OCM = 6;                                                       //OC1 in PWM Mode w/ Fault Pin Disabled
     OC2CONbits.OCM = 6;                                                         //OC2 in PWM Mode w/ Fault Pin Disabled
     OC3CONbits.OCM = 6;                                                         //OC3 in PWM Mode w/ Fault Pin Disabled
     OC4CONbits.OCM = 6;                                                         //OC4 in PWM Mode w/ Fault Pin Disabled
@@ -304,33 +415,40 @@ void init_OC(){
     OC4R = 1200;                                                                  //Initial PWM Duty cycle value to compare against TIMER3
 
     //Output Compare Pin Assignments
-    TRISBbits.TRISB4 = 0;                                                       //(Pin 11) RP4 is an Output
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    //TRISBbits.TRISB4 = 0;                                                       //(Pin 11) RP4 is an Output
     TRISBbits.TRISB5 = 0;                                                       //(Pin 14) RP5 is an Output
     TRISBbits.TRISB6 = 0;                                                       //(Pin 15) RP6 is an Output
     TRISBbits.TRISB7 = 0;                                                       //(Pin 16) RP7 is an Output
     
-    RPOR2bits.RP4R = 18;                                                        //(Pin 11) OC1 to RP4
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    //RPOR2bits.RP4R = 18;                                                        //(Pin 11) OC1 to RP4
     RPOR2bits.RP5R = 19;                                                        //(Pin 14) OC2 to RP5
     RPOR3bits.RP6R = 20;                                                        //(Pin 15) OC3 to RP6
     RPOR3bits.RP7R = 21;                                                        //(Pin 16) OC4 to RP7
     
     //Initialize OC Servo Positions
-    //TODO: Update to 90 Degrees after testing.
-    OC1RS = 0;
+    //NOTE: RP4 was previously OC1 [Not enough remappable pins available]
+    //OC1RS = 0;
     OC2RS = 0;
     OC3RS = 0;
     OC4RS = 0;    
 }
 
 void init_IR(){
-
     TRISAbits.TRISA2 = 1;       // PIN 09 (RA2 - INPUT for IR_Sensor)
-    //TRISBbits.TRISB0 = 0; // this can be any gpio (For Testing Purposes)
-    //AD1PCFGL = 1111; //sets Port Configuration Register to digital inputs (For Testing Purposes)
-    
-    //    #define ir_switch PORTAbits.RA2 // Switch on RA2 - pin 9
-    //    #define led LATAbits.LATA3 // can be any free pin
 }
+
+void init_Gyroscope()
+{
+    Write_Control_Reg1 (0x1C);      // ODR = 100Hz, BW = 25Hz, only Z axis is enabled
+    Write_Control_Reg2 (0x20);      // Normal mode, HPF cut-off freq = 8Hz at ODR = 100Hz
+    Write_Control_Reg3 (0x00);      // All interrupts are disabled
+    Write_Control_Reg4 (0x80);      // Update depends on reading XYZ registers, Little Endian format, 250 degrees/sec, 4-wire SPI
+    Write_Control_Reg5 (0x00);      // FIFO disabled, High pass filter disabled, data comes from LPF1 output
+    Write_FIFO_Control_Reg (0x00);  // Bypass mode
+}
+
 
 int main(void) {
    
@@ -350,6 +468,7 @@ int main(void) {
     init_PWM2();
     init_OC();
     init_IR();
+    init_Gyroscope();
     PPSLock;
 
     P1TCONbits.PTEN = 1; //Enable the clock delivery to PWM1 Timer
@@ -358,10 +477,23 @@ int main(void) {
 
     int i = 0;
     int toggle = 1;
+
+
     delay(200, 100); //Stops the servo from taking off instantly!
 
     while (1) {
 
+        /*Note: Currently untested, function should do one of the following:
+         * Return a boolean value that will decide what the servo should do. 
+         * Return an integer value that will tell the servo how long to readjust itself. 
+         * */
+        //Gyroscope_Test();
+       
+        /*Controlled by IR sensor, if active the robot will do the following:
+         * 1. Stop movement for X seconds
+         * 2. Move backwards for X seconds.
+         * 3. Turn Left/Right based on a toggle to avoid "obstacle"
+         */
         if (PORTAbits.RA2) { //PIN 09    
             //If IR_Sensor is blocked, stop all PWM signals.     
             stopMovement();
